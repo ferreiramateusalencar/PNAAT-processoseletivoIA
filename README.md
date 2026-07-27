@@ -1,191 +1,298 @@
-# Processo Seletivo – Intensivo Maker | AI
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=00bfbf&height=120&section=header" alt="Cabeçalho decorativo"/>
 
-Bem-vindo(a) à **etapa prática do processo seletivo para o Intensivo Maker**.
+<h1 align="center">
+  <img src="https://fit-tecnologia.org.br/ava/pluginfile.php/1/theme_moove/logo/1784901257/pnaat-positivo.png" width="300px" alt="PNAAT"/>
+  <br/>
+  Desafio Técnico – Edge AI com Visão Computacional
+</h1>
 
-Esta atividade tem como objetivo avaliar competências técnicas relacionadas a **Machine Learning**, **Visão Computacional** e **Otimização de modelos para sistemas embarcados (Edge AI)**, a partir da aplicação prática dos conhecimentos adquiridos nos cursos EAD da etapa anterior.
+<p align="center">
+  Classificação de dígitos manuscritos do MNIST com uma rede neural
+  convolucional, conversão para TensorFlow Lite e inferência otimizada para
+  dispositivos Edge.
+</p>
 
-> 🎯 **Importante**
-> O foco deste desafio é avaliar sua capacidade de **projetar, treinar e otimizar um modelo de IA** — e de **entregar corretamente** os artefatos gerados.
-
----
-
-## 📌 Navegação Rápida
-
-- 🏁 [Passo 0 – Antes de Tudo](#-passo-0-antes-de-tudo)
-- ⚙ [Passo 1 – Preparando o Ambiente](#-passo-1-preparando-o-ambiente)
-- 🧭 [Passo 2 – Escolha do Projeto](#-passo-2-escolha-do-projeto)
-- 📤 [Passo 3 – Instruções de Entrega](#-passo-3-instruções-de-entrega)
-- ⚠️ [Restrições Gerais de Engenharia](#️-restrições-gerais-de-engenharia)
-- 🆘 [Suporte](#-suporte)
-
----
-
-## 🏁 Passo 0: Antes de Tudo
-
-Caso você **nunca tenha utilizado Git ou GitHub**, não se preocupe. Siga atentamente as etapas abaixo.
-
-### 1️⃣ Criação de Conta no GitHub
-
-1. Acesse: https://github.com
-2. Clique em **Sign up**
-3. Crie sua conta gratuita seguindo as instruções da plataforma
-
-(*O GitHub será utilizado para envio, versionamento e correção automática do seu projeto.*)
-
-### 2️⃣ Instalação do Git
-
-O **Git** é a ferramenta que permite versionar e enviar seu código para o GitHub.
-
-- **Windows** — Baixe e instale o **Git Bash**: https://git-scm.com/downloads
-- **Linux / macOS** — Verifique se o Git já está instalado:
-  ```bash
-  git --version
-  ```
+<p align="center">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.10-3776AB?logo=python&logoColor=white"/>
+  <img alt="TensorFlow" src="https://img.shields.io/badge/TensorFlow-2.16.1-FF6F00?logo=tensorflow&logoColor=white"/>
+  <img alt="NumPy" src="https://img.shields.io/badge/NumPy-1.26.4-013243?logo=numpy&logoColor=white"/>
+  <img alt="Status" src="https://img.shields.io/badge/status-em%20validação-yellow"/>
+</p>
 
 ---
 
-## ⚙ Passo 1: Preparando o Ambiente
+## 👤 Identificação
 
-Para desenvolver o desafio, você deverá criar uma cópia deste repositório.
+<table>
+  <tr>
+    <td align="center">
+      <img src="https://avatars.githubusercontent.com/u/86336670?v=4" width="100px" alt="Mateus Alencar Ferreira"/>
+      <br/>
+      <strong>Mateus Alencar Ferreira</strong>
+      <br/>
+      <a href="https://github.com/ferreiramateusalencar">@ferreiramateusalencar</a>
+      <br/><br/>
+      <a href="https://www.linkedin.com/in/mateus-alencar-ferreira/" title="LinkedIn">🌐 LinkedIn</a>
+    </td>
+  </tr>
+</table>
 
-### 1️⃣ Fork do Repositório
+| Campo | Informação |
+| --- | --- |
+| Projeto escolhido | Projeto 1 — Classificação MNIST |
+| Tarefa | Classificação de dígitos manuscritos de 0 a 9 |
+| Artefato treinado | `model.h5` |
+| Artefato Edge | `model.tflite` |
 
-No canto superior direito desta página, clique em **Fork**. Uma cópia deste repositório será criada no **seu perfil do GitHub**.
-(*O Fork permite que você trabalhe de forma independente sem alterar o repositório original.*)
+---
 
-### 2️⃣ Clone do Repositório
+## 1️⃣ Resumo da Arquitetura do Modelo
 
-No repositório do **seu Fork**, clique em **<> Code**, copie a URL e execute:
+A CNN implementada em `train_model.py` recebe imagens em escala de cinza com
+formato **`(28, 28, 1)`**. Antes do treinamento, os pixels são convertidos para
+`float32` e normalizados do intervalo original `[0, 255]` para **`[0, 1]`**.
 
-```bash
-git clone https://github.com/SEU_USUARIO/nome-do-repositorio.git
-cd nome-do-repositorio
+O conjunto original de treinamento do MNIST é dividido explicitamente em:
+
+- **54.000 imagens para treinamento**;
+- **6.000 imagens para validação**.
+
+### Blocos convolucionais
+
+O modelo possui três blocos de extração de características:
+
+| Bloco | Filtros | Estrutura |
+| ---: | ---: | --- |
+| 1 | 16 | `Conv2D(3×3)` → `BatchNormalization` → ReLU → `MaxPooling2D` |
+| 2 | 32 | `Conv2D(3×3)` → `BatchNormalization` → ReLU → `MaxPooling2D` |
+| 3 | 64 | `Conv2D(3×3)` → `BatchNormalization` → ReLU → `MaxPooling2D` |
+
+As camadas convolucionais aprendem características progressivamente mais
+complexas. Os primeiros filtros identificam bordas e traços simples; os blocos
+seguintes combinam essas informações para reconhecer curvas e formas
+características dos dígitos.
+
+`BatchNormalization` estabiliza as ativações e contribui para um treinamento
+mais consistente. `MaxPooling2D` reduz as dimensões espaciais dos mapas de
+características, diminuindo o custo computacional e preservando as informações
+mais relevantes.
+
+### Camadas de classificação
+
+Depois dos blocos convolucionais, o modelo utiliza:
+
+- **`Flatten`** para transformar os mapas de características em um vetor;
+- **`Dense(64, ReLU)`** para combinar as características aprendidas;
+- **`Dropout(0.30)`** para reduzir o risco de overfitting;
+- **`Dense(10, Softmax)`** para gerar a probabilidade de cada dígito de 0 a 9.
+
+```text
+Entrada (28×28×1)
+    ↓
+Conv2D(16) → BatchNorm → ReLU → MaxPooling
+    ↓
+Conv2D(32) → BatchNorm → ReLU → MaxPooling
+    ↓
+Conv2D(64) → BatchNorm → ReLU → MaxPooling
+    ↓
+Flatten → Dense(64, ReLU) → Dropout(30%)
+    ↓
+Dense(10, Softmax)
 ```
 
-### 3️⃣ Preparação do Ambiente de Execução
+### Estratégia de treinamento
 
-Você pode executar o projeto de **três formas**. Escolha apenas uma.
+| Hiperparâmetro | Configuração |
+| --- | --- |
+| Otimizador | Adam |
+| Learning rate | `0.001` |
+| Máximo de épocas | 12 |
+| Batch size | 128 |
+| Early stopping | `val_loss`, paciência de 2 épocas |
+| Melhor peso | Restaurado automaticamente |
+| Dispositivo | CPU |
+| Semente aleatória | 42 |
 
-#### Opção A – Ambiente Python Local
-Requisitos: Python **3.10 ou 3.11** e pip.
+O **Dropout de 30%** foi escolhido para regularizar a rede sem eliminar uma
+quantidade excessiva de informações. O **batch size de 128** reduz o tempo de
+treinamento em CPU e ainda mantém atualizações frequentes dos gradientes. O
+limite de 12 épocas, combinado ao `EarlyStopping`, evita processamento
+desnecessário quando a perda de validação deixa de melhorar.
 
-As dependências ficam dentro da pasta do projeto escolhido (veja Passo 2), então instale-as **depois** de escolher seu projeto:
+---
+
+## 2️⃣ Bibliotecas Utilizadas
+
+| Biblioteca | Versão | Utilização |
+| --- | ---: | --- |
+| Python | 3.10 | Execução dos scripts e ambiente da CI |
+| TensorFlow | 2.16.1 | Treinamento, salvamento e conversão TFLite |
+| `tf.keras` | TensorFlow 2.16.1 | Construção da CNN e early stopping |
+| NumPy | 1.26.4 | Preparação das imagens e interpretação das predições |
+| `os` | Biblioteca padrão | Caminhos e medição dos arquivos |
+
+As dependências principais estão fixadas em `requirements.txt`. As versões do
+ambiente ativo podem ser conferidas com:
 
 ```bash
-cd projetos/<pasta-do-projeto-escolhido>
+python --version
+pip show tensorflow keras numpy
+```
+
+---
+
+## 3️⃣ Técnica de Otimização do Modelo
+
+No arquivo `optimize_model.py` é aplicada a **Quantização de Faixa Dinâmica**
+(*Dynamic Range Quantization*):
+
+```python
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+converter.optimizations = [tf.lite.Optimize.DEFAULT]
+tflite_model = converter.convert()
+```
+
+Durante a conversão, os pesos originalmente armazenados em `float32` são
+geralmente representados em `int8`. As entradas e saídas permanecem em ponto
+flutuante, permitindo que o script de inferência continue recebendo imagens
+normalizadas em `float32`.
+
+A técnica foi escolhida porque:
+
+- reduz o tamanho do modelo;
+- diminui a memória necessária para armazenar os pesos;
+- não exige um conjunto representativo de calibração;
+- normalmente preserva a acurácia em modelos compactos de classificação;
+- facilita a implantação em equipamentos com recursos limitados.
+
+Depois da conversão, o script carrega `model.tflite` com
+`tf.lite.Interpreter` e aloca os tensores, confirmando que o artefato gerado
+pode ser interpretado pelo runtime do TensorFlow Lite.
+
+---
+
+## 4️⃣ Resultados Obtidos
+
+> [!IMPORTANT]
+> Os artefatos devem ser regenerados com o `train_model.py` atual antes da
+> entrega definitiva. Os valores de acurácia e inferência serão preenchidos
+> exclusivamente com a saída da nova execução.
+
+| Métrica | Valor |
+| --- | ---: |
+| Acurácia final de validação | **Pendente de novo treinamento** |
+| Acurácia no validador oficial | **Pendente de validação** |
+| Tamanho atual de `model.h5` | 1.165.592 bytes — 1.138,3 KB |
+| Tamanho atual de `model.tflite` | 104.200 bytes — 101,8 KB |
+| Redução atual de tamanho | 1.061.392 bytes — 91,1% |
+
+Os tamanhos acima foram medidos diretamente nos arquivos presentes no
+repositório. Eles deverão ser atualizados caso o novo treinamento e a nova
+conversão produzam arquivos com dimensões diferentes.
+
+---
+
+## 5️⃣ Comentários Adicionais
+
+### Dificuldade encontrada
+
+O principal desafio é equilibrar capacidade de aprendizado, tempo de
+treinamento em CPU e tamanho final do modelo. Uma arquitetura muito pequena
+pode perder acurácia, enquanto uma arquitetura excessivamente profunda aumenta
+o custo computacional sem benefício proporcional para o MNIST.
+
+### Decisões técnicas
+
+- Foram utilizados três blocos convolucionais para atender aos requisitos e
+  permitir aprendizado progressivo de características.
+- A quantidade de filtros aumenta de 16 para 64 conforme as dimensões espaciais
+  são reduzidas.
+- O bias das convoluções foi desativado porque o deslocamento já é tratado pela
+  Batch Normalization.
+- O treinamento é limitado a 12 épocas, mas pode terminar antes pelo
+  `EarlyStopping`.
+- A GPU é desabilitada explicitamente para garantir aderência ao requisito de
+  treinamento em CPU.
+- A semente 42 melhora a reprodutibilidade dos resultados.
+
+### Limitações
+
+O modelo aprende a partir de imagens centralizadas e normalizadas do MNIST. Ele
+não deve ser considerado confiável para números fotografados em papéis, placas
+ou ambientes reais sem novo treinamento com dados representativos dessas
+condições.
+
+### Aprendizados
+
+O projeto demonstra o fluxo completo:
+
+**treinamento → validação → salvamento → quantização → inferência TFLite**
+
+Também evidencia que otimizar para Edge AI não significa apenas reduzir o
+tamanho do arquivo. É necessário verificar a métrica de validação e confirmar
+que o modelo convertido ainda executa inferências coerentes.
+
+---
+
+## 6️⃣ Exemplo de Inferência
+
+A inferência é executada especificamente com o modelo otimizado:
+
+```bash
+python run_inference.py
+```
+
+O script analisa dez amostras do conjunto de teste e apresenta classe predita,
+classe real e confiança:
+
+```text
+Inferência de 10 amostras com model.tflite
+Amostra 01: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 02: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 03: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 04: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 05: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 06: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 07: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 08: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 09: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Amostra 10: predito=<resultado> | real=<rótulo> | confiança=<valor>
+Acertos na amostra: <total>/10
+```
+
+> [!NOTE]
+> Este bloco deverá ser substituído pela saída integral do terminal depois que
+> `model.h5` e `model.tflite` forem regenerados. O comentário sobre os acertos
+> ou erros deve refletir o resultado realmente observado.
+
+---
+
+## ▶️ Como Executar
+
+Na pasta do projeto:
+
+```bash
 pip install -r requirements.txt
+python train_model.py
+python optimize_model.py
+python run_inference.py
 ```
 
-#### Opção B – Dev Container
-Este repositório inclui um **Dev Container** para facilitar a criação de um ambiente Python padronizado.
-
-**Requisitos:** VS Code, Docker instalado, extensão **Dev Containers**.
-
-**Passos:** abra o repositório no VS Code → **"Reopen in Container"** → aguarde a criação automática do ambiente.
-
-#### Opção C – via browser (GitHub Codespaces)
-1. Clique em **<> Code**
-2. Clique em **Codespaces**
-3. Clique em **Create codespace on main**
-
-> Será aberta uma instância do VS Code no seu navegador com o container configurado.
-
----
-
-## 🧭 Passo 2: Escolha do Projeto
-
-Este desafio oferece **três opções de projeto**, todas em Visão Computacional e com **níveis de dificuldade equivalentes**. Você deve escolher **apenas uma**.
-
-| # | Projeto | Tarefa | Dataset |
-|---|---------|--------|---------|
-| 1 | [Classificação MNIST](projetos/1-classificacao-mnist/README.md) | Classificação de dígitos manuscritos (0-9) | `tf.keras.datasets.mnist` |
-| 2 | [Classificação CIFAR-10](projetos/2-classificacao-cifar/README.md) | Classificação de imagens coloridas (10 categorias de objetos/animais) | `tf.keras.datasets.cifar10` |
-| 3 | [Detecção de Máscaras Faciais](projetos/3-deteccao-mascaras/README.md) | Detecção de objetos: localizar rostos e classificar uso de máscara (fine-tuning de YOLO) | Face Mask Detection (Kaggle, CC0) — já incluso no repositório |
-
-Clique no link do projeto escolhido para ver as instruções técnicas completas e o template do relatório.
-
-### ⚠️ Depois de escolher, você DEVE:
-
-1. Trabalhar **apenas** dentro da pasta do projeto escolhido (`projetos/N-nome-do-projeto/`).
-2. **Apagar as pastas dos outros dois projetos** dentro de `projetos/` antes do commit final.
-3. Manter os nomes de arquivos e a estrutura interna da pasta do projeto **sem alterações**.
-
-> 🤖 **Por quê apagar as outras pastas?**
-> A correção automática (GitHub Actions) identifica qual projeto você escolheu verificando qual pasta restou dentro de `projetos/`. Se mais de uma pasta permanecer (ou nenhuma), a validação falha automaticamente com uma mensagem explicando o problema.
-
----
-
-## 📤 Passo 3: Instruções de Entrega
-
-### ✔️ Antes de enviar
-
-Dentro da pasta do seu projeto, execute os scripts e confirme que os arquivos foram gerados:
+Para executar o validador oficial a partir da raiz do repositório:
 
 ```bash
-cd projetos/<pasta-do-projeto-escolhido>
-python train_model.py       # deve gerar model.h5 (Projetos 1 e 2) ou model.pt (Projeto 3)
-python optimize_model.py    # deve gerar model.tflite
+python .github/scripts/validate_1_mnist.py projetos/1-classificacao-mnist
 ```
 
-> ⚠️ **Importante:** a correção automática **não treina nada por você**. Ela valida os artefatos que **você gerou localmente e enviou (commitou) para o repositório**. Se esses arquivos não estiverem no seu commit, a validação falha.
-
-### ⬆️ Envio do Código
-
-```bash
-git add .
-git commit -m "Entrega do desafio técnico - Seu Nome"
-git push origin main
-```
-
-### 🔍 Verificação Automática
-
-1. Acesse a aba **Actions** no GitHub do seu Fork
-2. Verifique se o workflow foi executado com sucesso (✅)
-3. Em caso de erro (❌), consulte os logs, corrija e envie novamente
-
-### 📎 Submissão Final
-
-Copie o link do seu repositório e envie conforme orientações do processo seletivo no Moodle.
-
 ---
 
-## ⚠️ Restrições Gerais de Engenharia
+## 📄 Licença
 
-Válidas para os três projetos (detalhes específicos estão no README de cada um):
+Este projeto é disponibilizado sob a licença MIT. Consulte o arquivo
+[LICENSE](../../LICENSE) para os termos completos.
 
-- Treinamento apenas em **CPU**
-- Sem uso de modelos pré-treinados — **exceto no Projeto 3**, onde o fine-tuning
-  de um modelo pré-treinado (YOLO11n) é intencional e faz parte do desafio
-- Número de épocas limitado (compatível com execução rápida — exceto o Projeto 3,
-  que naturalmente leva mais tempo por envolver fine-tuning de um detector)
-- Código deve executar do início ao fim **sem intervenção manual**
-- Os artefatos do modelo treinado e do modelo otimizado (`model.h5`/`model.pt` e
-  `model.tflite`, dependendo do projeto) **devem ser gerados localmente e
-  enviados (commitados) junto com o código** — a correção automática apenas os
-  valida, não os gera
+<p align="center">
+  <strong>Projeto desenvolvido para o Processo Seletivo Intensivo Maker — 2ª Região</strong>
+</p>
 
-> **Importante:** o objetivo não é obter a maior acurácia possível, mas sim demonstrar **engenharia eficiente** e a capacidade de entregar um pipeline completo e reprodutível.
-
----
-
-## 📚 Material de Apoio
-
-Os cursos realizados na etapa anterior **devem ser utilizados como referência**:
-
-- 📘 Fundamentos de Inteligência Artificial para Sistemas Embarcados
-- 👁️ Sistemas de Visão Computacional Embarcada
-- ⚙️ Otimização de Modelos em Sistemas Embarcados
-
----
-
-## 🆘 Suporte
-
-Em caso de dúvidas:
-
-- Consulte o material dos cursos EAD
-- Leia atentamente este README e o README do projeto escolhido
-- Analise os logs das GitHub Actions
-- Utilize os canais oficiais para contato com os instrutores
-
-Boa sorte no processo seletivo.
-****
+<img width="100%" src="https://capsule-render.vercel.app/api?type=waving&color=00bfbf&height=120&section=footer" alt="Rodapé decorativo"/>

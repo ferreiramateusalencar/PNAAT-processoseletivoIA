@@ -1,4 +1,4 @@
-# Artefatos temporários de treinamento (Ultralytics YOLO - Projeto 3)
+# Artefatos temporários
 runs/
 *.cache
 yolo11n.pt
