@@ -7,52 +7,119 @@ on:
     branches: [ "main" ]
 
 jobs:
-  validate:
+  # ------------------------------------------------------------------
+  # 1) Detecta qual dos três projetos o candidato escolheu, verificando
+  #    quais pastas ainda existem em projetos/. O candidato deve ter
+  #    apagado as pastas dos projetos NÃO escolhidos.
+  # ------------------------------------------------------------------
+  detect:
     runs-on: ubuntu-latest
-
+    outputs:
+      project: ${{ steps.detect.outputs.project }}
+      validate_script: ${{ steps.detect.outputs.validate_script }}
     steps:
-      # 1️⃣ Clona o repositório do candidato
       - name: Checkout do repositório
         uses: actions/checkout@v4
 
-      # 2️⃣ Configura o ambiente Python
+      - name: Detectar projeto escolhido
+        id: detect
+        run: |
+          FOUND=()
+          [ -d "projetos/1-classificacao-mnist" ] && FOUND+=("1-classificacao-mnist")
+          [ -d "projetos/2-classificacao-cifar" ] && FOUND+=("2-classificacao-cifar")
+          [ -d "projetos/3-deteccao-mascaras" ] && FOUND+=("3-deteccao-mascaras")
+
+          if [ ${#FOUND[@]} -eq 0 ]; then
+            echo "::error::Nenhuma pasta de projeto encontrada em projetos/. Escolha um dos três projetos (veja o README principal) e mantenha apenas a pasta correspondente."
+            exit 1
+          fi
+
+          if [ ${#FOUND[@]} -gt 1 ]; then
+            echo "::error::Mais de um projeto encontrado: ${FOUND[*]}. Apague as pastas dos projetos NÃO escolhidos — deve restar apenas uma pasta dentro de projetos/."
+            exit 1
+          fi
+
+          PROJECT="${FOUND[0]}"
+
+          case "$PROJECT" in
+            "1-classificacao-mnist") SCRIPT="validate_1_mnist.py" ;;
+            "2-classificacao-cifar") SCRIPT="validate_2_cifar.py" ;;
+            "3-deteccao-mascaras") SCRIPT="validate_3_mascaras.py" ;;
+          esac
+
+          echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
+          echo "validate_script=$SCRIPT" >> "$GITHUB_OUTPUT"
+          echo "✅ Projeto detectado: $PROJECT (script de validação: $SCRIPT)"
+
+  # ------------------------------------------------------------------
+  # 2) Valida os artefatos entregues pelo candidato (modelo treinado +
+  #    modelo otimizado JÁ DEVEM ESTAR no repositório — a CI não treina
+  #    nada nesta etapa, apenas confere o que foi entregue).
+  # ------------------------------------------------------------------
+  validate:
+    needs: detect
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: ${{ needs.detect.outputs.project }}
+      VALIDATE_SCRIPT: ${{ needs.detect.outputs.validate_script }}
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
       - name: Configurar Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # 3️⃣ Instala as dependências do projeto
-      - name: Instalar dependências
+      - name: Verificar arquivos obrigatórios entregues pelo candidato
+        run: |
+          DIR="projetos/$PROJECT"
+
+          if [ "$PROJECT" = "3-deteccao-mascaras" ]; then
+            REQUIRED_FILES="train_model.py optimize_model.py run_inference.py requirements.txt model.pt model.tflite README.md"
+            if [ ! -f "$DIR/dataset/data.yaml" ]; then
+              echo "::error::dataset/data.yaml ausente em $DIR. A pasta dataset/ não deveria ter sido alterada."
+              exit 1
+            fi
+          else
+            REQUIRED_FILES="train_model.py optimize_model.py run_inference.py requirements.txt model.h5 model.tflite README.md"
+          fi
+
+          for f in $REQUIRED_FILES; do
+            if [ ! -f "$DIR/$f" ]; then
+              echo "::error::Arquivo obrigatório ausente: $DIR/$f. Confira a estrutura exigida no README do projeto."
+              exit 1
+            fi
+          done
+          echo "✅ Todos os arquivos obrigatórios estão presentes em $DIR"
+
+      - name: Instalar dependências do projeto escolhido
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r "projetos/$PROJECT/requirements.txt"
 
-      # 4️⃣ Executa o script de treinamento
-      - name: Executar treinamento do modelo
+      - name: Validar artefatos entregues pelo candidato
         run: |
+          python ".github/scripts/${VALIDATE_SCRIPT}" "projetos/$PROJECT"
+        env:
+          PYTHONPATH: .github/scripts
+
+      - name: Checagem secundária — confirmar que os scripts executam sem erro
+        run: |
+          cd "projetos/$PROJECT"
+          echo "Executando train_model.py (checagem de execução — não substitui o artefato treinado entregue)..."
+          echo "Nota: no Projeto 3 (YOLO), este passo tende a demorar mais que nos Projetos 1/2."
           python train_model.py
-
-      # 5️⃣ Verifica se o modelo treinado foi gerado
-      - name: Verificar geração do modelo .h5
-        run: |
-          if [ ! -f model.h5 ]; then
-            echo "❌ Arquivo model.h5 não encontrado."
-            exit 1
-          fi
-
-      # 6️⃣ Executa o script de otimização/conversão
-      - name: Executar otimização do modelo
-        run: |
+          echo "Executando optimize_model.py (checagem de execução — não substitui o artefato otimizado entregue)..."
           python optimize_model.py
+        continue-on-error: false
 
-      # 7️⃣ Verifica se o modelo otimizado foi gerado
-      - name: Verificar geração do modelo .tflite
+      - name: Checagem terciária — confirmar que a inferência com model.tflite funciona
         run: |
-          if [ ! -f model.tflite ]; then
-            echo "❌ Arquivo model.tflite não encontrado."
-            exit 1
-          fi
+          cd "projetos/$PROJECT"
+          echo "Executando run_inference.py (confirma que o artefato de edge roda inferência de verdade)..."
+          python run_inference.py
+        continue-on-error: false
 
-      # 8️⃣ Finalização
       - name: Finalização
-        run: echo "✅ Desafio executado com sucesso!"
+        run: echo "✅ Desafio validado com sucesso para o projeto $PROJECT"
